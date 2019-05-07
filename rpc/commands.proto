@@ -47,6 +47,8 @@ service ArduinoCore {
   // BOARD COMMANDS
   // --------------
 
+  rpc BoardList(BoardListReq) returns (BoardListResp);
+
   // Requests details about a board
   rpc BoardDetails(BoardDetailsReq) returns (BoardDetailsResp);
 

@@ -17,7 +17,7 @@
 
 package daemon
 
-//go:generate protoc -I arduino --go_out=plugins=grpc:arduino arduino/arduino.proto
+//DONOTgo:generate protoc -I arduino --go_out=plugins=grpc:arduino arduino/arduino.proto
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/arduino/arduino-cli/commands"
 	"github.com/arduino/arduino-cli/commands/board"
@@ -33,6 +34,7 @@ import (
 	"github.com/arduino/arduino-cli/commands/lib"
 	"github.com/arduino/arduino-cli/commands/upload"
 	"github.com/arduino/arduino-cli/rpc"
+	discovery "github.com/arduino/board-discovery"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -58,6 +60,47 @@ type ArduinoCoreServerImpl struct{}
 
 func (s *ArduinoCoreServerImpl) BoardDetails(ctx context.Context, req *rpc.BoardDetailsReq) (*rpc.BoardDetailsResp, error) {
 	return board.BoardDetails(ctx, req)
+}
+
+func (s *ArduinoCoreServerImpl) BoardList(ctx context.Context, req *rpc.BoardListReq) (*rpc.BoardListResp, error) {
+	monitor := discovery.New(time.Millisecond)
+
+	// This is a bit of a hack, but akin to how the list command does it.
+	// TODO: check if this function gets called in a Go routine of the main handler
+	monitor.Start()
+	time.Sleep(5 * time.Second)
+	monitor.Stop()
+
+	sd := monitor.Serial()
+	serial := make([]*rpc.AttachedSerialBoard, len(sd))
+	i := 0
+	for _, s := range sd {
+		serial[i] = &rpc.AttachedSerialBoard{
+			Port:         s.Port,
+			SerialNumber: s.SerialNumber,
+			ProductID:    s.ProductID,
+			VendorID:     s.VendorID,
+		}
+		i++
+	}
+
+	nd := monitor.Network()
+	network := make([]*rpc.AttachedNetworkBoard, len(sd))
+	i = 0
+	for _, s := range nd {
+		network[i] = &rpc.AttachedNetworkBoard{
+			Name:    s.Name,
+			Info:    s.Info,
+			Address: s.Address,
+			Port:    uint64(s.Port),
+		}
+		i++
+	}
+
+	return &rpc.BoardListResp{
+		Serial:  serial,
+		Network: network,
+	}, nil
 }
 
 func (s *ArduinoCoreServerImpl) Destroy(ctx context.Context, req *rpc.DestroyReq) (*rpc.DestroyResp, error) {

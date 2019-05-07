@@ -62,15 +62,17 @@ message BoardListResp {
 }
 
 message AttachedNetworkBoard {
-	string name    = 1;
-	string info    = 2;
-  string address = 3;
-	uint64 port    = 4;
+  string name    = 1;
+  string fqbn    = 2;
+	string info    = 3;
+  string address = 4;
+	uint64 port    = 5;
 }
 
 message AttachedSerialBoard {
   string port         = 1;
-	string serialNumber = 2;
-	string productID    = 3;
-	string vendorID     = 4;
+  string fqbn         = 2;
+	string serialNumber = 3;
+	string productID    = 4;
+	string vendorID     = 5;
 }

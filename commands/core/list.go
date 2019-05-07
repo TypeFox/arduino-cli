@@ -40,6 +40,7 @@ func PlatformList(ctx context.Context, req *rpc.PlatformListReq) (*rpc.PlatformL
 						continue
 					}
 				}
+
 				p := &rpc.InstalledPlatform{
 					ID:        platformRelease.String(),
 					Installed: platformRelease.Version.String(),

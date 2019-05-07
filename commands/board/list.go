@@ -3,9 +3,9 @@ package board
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
+	"github.com/arduino/arduino-cli/arduino/cores"
 	"github.com/arduino/arduino-cli/arduino/cores/packagemanager"
 	"github.com/arduino/arduino-cli/commands"
 	"github.com/arduino/arduino-cli/rpc"
@@ -31,18 +31,15 @@ func List(ctx context.Context, req *rpc.BoardListReq) (*rpc.BoardListResp, error
 	serial := make([]*rpc.AttachedSerialBoard, len(sd))
 	i := 0
 	for _, s := range sd {
-		fqbn, err := findFqbnForSerial(pm, s.VendorID, s.ProductID)
-		if err != nil && !isNotFoundError(err) {
-			return nil, err
-		}
-
-		serial[i] = &rpc.AttachedSerialBoard{
+		b := &rpc.AttachedSerialBoard{
 			Port:         s.Port,
-			Fqbn:         fqbn,
 			SerialNumber: s.SerialNumber,
 			ProductID:    s.ProductID,
 			VendorID:     s.VendorID,
 		}
+		completeInfoForSerial(pm, b)
+
+		serial[i] = b
 		i++
 	}
 
@@ -52,7 +49,6 @@ func List(ctx context.Context, req *rpc.BoardListReq) (*rpc.BoardListResp, error
 	for _, s := range nd {
 		network[i] = &rpc.AttachedNetworkBoard{
 			Name:    s.Name,
-			Fqbn:    "unknown",
 			Info:    s.Info,
 			Address: s.Address,
 			Port:    uint64(s.Port),
@@ -66,7 +62,8 @@ func List(ctx context.Context, req *rpc.BoardListReq) (*rpc.BoardListResp, error
 	}, nil
 }
 
-func findFqbnForSerial(pm *packagemanager.PackageManager, vid, pid string) (string, error) {
+func completeInfoForSerial(pm *packagemanager.PackageManager, b *rpc.AttachedSerialBoard) {
+	var matchingBoard *cores.Board
 	for _, pkg := range pm.GetPackages().Packages {
 		for _, platform := range pkg.Platforms {
 			platformRelease := pm.GetInstalledPlatformRelease(platform)
@@ -75,32 +72,20 @@ func findFqbnForSerial(pm *packagemanager.PackageManager, vid, pid string) (stri
 			}
 
 			for _, brd := range platformRelease.Boards {
-				if !brd.HasUsbID(vid, pid) {
+				if !brd.HasUsbID(b.VendorID, b.ProductID) {
 					continue
 				}
 
-				return brd.FQBN(), nil
+				matchingBoard = brd
+				break
 			}
 		}
 	}
 
-	return "", &fqbnNotFoundError{VID: vid, PID: pid}
-}
-
-type fqbnNotFoundError struct {
-	VID string
-	PID string
-}
-
-func (e *fqbnNotFoundError) Error() string {
-	return fmt.Sprintf("no installed board found for %s:%s", e.VID, e.PID)
-}
-
-func isNotFoundError(err error) bool {
-	if err == nil {
-		return false
+	if matchingBoard == nil {
+		return
 	}
 
-	_, ok := err.(*fqbnNotFoundError)
-	return ok
+	b.Fqbn = matchingBoard.FQBN()
+	b.Name = matchingBoard.Name()
 }

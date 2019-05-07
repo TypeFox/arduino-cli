@@ -70,9 +70,10 @@ message AttachedNetworkBoard {
 }
 
 message AttachedSerialBoard {
-  string port         = 1;
+  string name         = 1;
   string fqbn         = 2;
-	string serialNumber = 3;
-	string productID    = 4;
-	string vendorID     = 5;
+  string port         = 3;
+	string serialNumber = 4;
+	string productID    = 5;
+	string vendorID     = 6;
 }

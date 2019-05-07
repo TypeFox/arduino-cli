@@ -10,6 +10,7 @@ import (
 	"github.com/arduino/arduino-cli/commands"
 	"github.com/arduino/arduino-cli/rpc"
 	discovery "github.com/arduino/board-discovery"
+	log "github.com/sirupsen/logrus"
 )
 
 // List lists all attached boards and matches them with installed platforms
@@ -63,6 +64,7 @@ func List(ctx context.Context, req *rpc.BoardListReq) (*rpc.BoardListResp, error
 }
 
 func completeInfoForSerial(pm *packagemanager.PackageManager, b *rpc.AttachedSerialBoard) {
+	log.SetLevel(log.DebugLevel)
 	var matchingBoard *cores.Board
 	for _, pkg := range pm.GetPackages().Packages {
 		for _, platform := range pkg.Platforms {
@@ -83,6 +85,7 @@ func completeInfoForSerial(pm *packagemanager.PackageManager, b *rpc.AttachedSer
 	}
 
 	if matchingBoard == nil {
+		log.WithField("port", b.Port).Debug("did not find installed package")
 		return
 	}
 

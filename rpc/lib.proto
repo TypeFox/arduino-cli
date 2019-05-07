@@ -79,6 +79,19 @@ message SearchLibraryOutput {
     LibraryRelease latest = 3;
 }
 
+message LibraryListReq {
+    Instance instance = 1;
+}
+
+message LibraryListResp {
+    repeated InstalledLibrary libraries = 1;
+}
+
+message InstalledLibrary {
+    string name = 1;
+    LibraryRelease installed = 2;
+}
+
 message LibraryRelease {
     string author = 1;
     string version = 2;

@@ -18,9 +18,14 @@
 package lib
 
 import (
+	"context"
+
 	"github.com/arduino/arduino-cli/arduino/libraries/librariesindex"
 	"github.com/arduino/arduino-cli/arduino/libraries/librariesmanager"
+	"github.com/arduino/arduino-cli/commands"
 	"github.com/arduino/arduino-cli/common/formatter/output"
+	"github.com/arduino/arduino-cli/rpc"
+	log "github.com/sirupsen/logrus"
 )
 
 // ListLibraries returns the list of installed libraries. If updatable is true it
@@ -43,4 +48,35 @@ func ListLibraries(lm *librariesmanager.LibrariesManager, updatable bool) *outpu
 		}
 	}
 	return res
+}
+
+func List(ctx context.Context, req *rpc.LibraryListReq) (*rpc.LibraryListResp, error) {
+	log.SetLevel(log.DebugLevel)
+
+	lm := commands.GetLibraryManager(req)
+
+	res := make([]*rpc.InstalledLibrary, 0)
+	for _, libAlternatives := range lm.Libraries {
+		for _, lib := range libAlternatives.Alternatives {
+			librelease := &rpc.LibraryRelease{
+				Author:        lib.Author,
+				Version:       lib.Version.String(),
+				Maintainer:    lib.Maintainer,
+				Sentence:      lib.Sentence,
+				Paragraph:     lib.Paragraph,
+				Website:       lib.Website,
+				Category:      lib.Category,
+				Architectures: lib.Architectures,
+				Types:         lib.Types,
+			}
+
+			res = append(res, &rpc.InstalledLibrary{
+				Name:      lib.Name,
+				Installed: librelease,
+			})
+		}
+	}
+	return &rpc.LibraryListResp{
+		Libraries: res,
+	}, nil
 }

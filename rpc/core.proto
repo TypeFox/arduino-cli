@@ -82,8 +82,12 @@ message SearchOutput {
 	string Version = 2;
 	string Name = 3;
 	string Author = 4;
-	string Sentence = 5;
-	string Paragragh = 6;
+	repeated SearchOutputBoard Boards = 5;
+}
+
+message SearchOutputBoard {
+	string name = 1;
+	string fqbn = 2;
 }
 
 message PlatformListReq {

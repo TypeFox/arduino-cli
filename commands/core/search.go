@@ -81,20 +81,22 @@ func PlatformSearch(ctx context.Context, req *rpc.PlatformSearchReq) (*rpc.Platf
 	out := []*rpc.SearchOutput{}
 	for _, r := range res {
 		plt := &rpc.SearchOutput{
-			ID:       r.Release.Platform.String(),
-			Name:     r.Release.Platform.Name,
-			Version:  r.Release.Version.String(),
-			Sentence: "Boards included in this package: ",
+			ID:      r.Release.Platform.String(),
+			Name:    r.Release.Platform.Name,
+			Version: r.Release.Version.String(),
 		}
 
 		i := 0
-		boardNames := make([]string, len(r.Release.Boards))
+		boards := make([]*rpc.SearchOutputBoard, len(r.Release.Boards))
 		for _, b := range r.Release.Boards {
-			boardNames[i] = b.Name()
+			boards[i] = &rpc.SearchOutputBoard{
+				Name: b.Name(),
+				Fqbn: b.FQBN(),
+			}
 			i++
 		}
+		plt.Boards = boards
 
-		plt.Paragragh = strings.Join(boardNames, ", ")
 		if r.Package != nil {
 			plt.Author = r.Package.Maintainer
 		}

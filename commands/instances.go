@@ -72,6 +72,14 @@ func GetLibraryManager(req InstanceContainer) *librariesmanager.LibrariesManager
 	return i.lm
 }
 
+func GetConfig(req InstanceContainer) *configs.Configuration {
+	i, ok := instances[req.GetInstance().GetId()]
+	if !ok {
+		return nil
+	}
+	return i.config
+}
+
 func Init(ctx context.Context, req *rpc.InitReq) (*rpc.InitResp, error) {
 	inConfig := req.GetConfiguration()
 	if inConfig == nil {

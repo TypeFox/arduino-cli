@@ -35,7 +35,6 @@ func LibrarySearch(ctx context.Context, req *rpc.LibrarySearchReq) (*rpc.Library
 	}
 
 	res := []*rpc.SearchLibraryOutput{}
-
 	for _, lib := range lm.Index.Libraries {
 		if strings.Contains(strings.ToLower(lib.Name), strings.ToLower(req.GetQuery())) {
 			releases := map[string]*rpc.LibraryRelease{}
@@ -50,6 +49,11 @@ func LibrarySearch(ctx context.Context, req *rpc.LibrarySearchReq) (*rpc.Library
 				Latest:   latest,
 			}
 			res = append(res, searchedlib)
+
+			if len(res) > 100 {
+				// enough libraries - at some point we hit the gRPC message size limit
+				break
+			}
 		}
 	}
 

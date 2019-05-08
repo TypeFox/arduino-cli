@@ -44,7 +44,7 @@ func InitCommand() *cobra.Command {
 }
 
 const (
-	port = ":50051"
+	port = "localhost:50051"
 )
 
 func runDaemonCommand(cmd *cobra.Command, args []string) {

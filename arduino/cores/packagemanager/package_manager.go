@@ -29,7 +29,7 @@ import (
 	"github.com/arduino/go-paths-helper"
 	properties "github.com/arduino/go-properties-orderedmap"
 	"github.com/sirupsen/logrus"
-	"go.bug.st/relaxed-semver"
+	semver "go.bug.st/relaxed-semver"
 )
 
 // PackageManager defines the superior oracle which understands all about

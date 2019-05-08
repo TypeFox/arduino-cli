@@ -81,6 +81,9 @@ message SearchOutput {
 	string ID = 1;
 	string Version = 2;
 	string Name = 3;
+	string Author = 4;
+	string Sentence = 5;
+	string Paragragh = 6;
 }
 
 message PlatformListReq {

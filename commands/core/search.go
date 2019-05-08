@@ -28,6 +28,11 @@ import (
 	"github.com/arduino/arduino-cli/rpc"
 )
 
+type platformSearchResult struct {
+	Release *cores.PlatformRelease
+	Package *cores.Package
+}
+
 func PlatformSearch(ctx context.Context, req *rpc.PlatformSearchReq) (*rpc.PlatformSearchResp, error) {
 	pm := commands.GetPackageManager(req)
 	if pm == nil {
@@ -36,10 +41,13 @@ func PlatformSearch(ctx context.Context, req *rpc.PlatformSearchReq) (*rpc.Platf
 
 	search := req.SearchArgs
 
-	res := []*cores.PlatformRelease{}
+	res := make([]platformSearchResult, 0)
 	if isUsb, _ := regexp.MatchString("[0-9a-f]{4}:[0-9a-f]{4}", search); isUsb {
 		vid, pid := search[:4], search[5:]
-		res = pm.FindPlatformReleaseProvidingBoardsWithVidPid(vid, pid)
+		boards := pm.FindPlatformReleaseProvidingBoardsWithVidPid(vid, pid)
+		for _, b := range boards {
+			res = append(res, platformSearchResult{Release: b})
+		}
 	} else {
 		match := func(line string) bool {
 			return strings.Contains(strings.ToLower(line), search)
@@ -51,12 +59,18 @@ func PlatformSearch(ctx context.Context, req *rpc.PlatformSearchReq) (*rpc.Platf
 					continue
 				}
 				if match(platform.Name) || match(platform.Architecture) {
-					res = append(res, platformRelease)
+					res = append(res, platformSearchResult{
+						Release: platformRelease,
+						Package: targetPackage,
+					})
 					continue
 				}
 				for _, board := range platformRelease.BoardsManifest {
 					if match(board.Name) {
-						res = append(res, platformRelease)
+						res = append(res, platformSearchResult{
+							Release: platformRelease,
+							Package: targetPackage,
+						})
 						break
 					}
 				}
@@ -65,12 +79,26 @@ func PlatformSearch(ctx context.Context, req *rpc.PlatformSearchReq) (*rpc.Platf
 	}
 
 	out := []*rpc.SearchOutput{}
-	for _, platformRelease := range res {
-		out = append(out, &rpc.SearchOutput{
-			ID:      platformRelease.Platform.String(),
-			Name:    platformRelease.Platform.Name,
-			Version: platformRelease.Version.String(),
-		})
+	for _, r := range res {
+		plt := &rpc.SearchOutput{
+			ID:       r.Release.Platform.String(),
+			Name:     r.Release.Platform.Name,
+			Version:  r.Release.Version.String(),
+			Sentence: "Boards included in this package: ",
+		}
+
+		i := 0
+		boardNames := make([]string, len(r.Release.Boards))
+		for _, b := range r.Release.Boards {
+			boardNames[i] = b.Name()
+			i++
+		}
+
+		plt.Paragragh = strings.Join(boardNames, ", ")
+		if r.Package != nil {
+			plt.Author = r.Package.Maintainer
+		}
+		out = append(out, plt)
 	}
 	return &rpc.PlatformSearchResp{SearchOutput: out}, nil
 }
